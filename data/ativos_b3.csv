@@ -1,0 +1,133 @@
+ticker,nome,tipo,setor,ticker_yahoo
+AALR3,Alliança ON,Ação,Saúde,AALR3.SA
+ABCB4,Banco ABC Brasil PN,Ação,Financeiro,ABCB4.SA
+ABEV3,Ambev ON,Ação,Consumo Não Cíclico,ABEV3.SA
+AGRO3,BrasilAgro ON,Ação,Agropecuária,AGRO3.SA
+ALOS3,Allos ON,Ação,Financeiro,ALOS3.SA
+ALPA4,Alpargatas PN,Ação,Consumo Cíclico,ALPA4.SA
+ALUP11,Alupar Unit,Ação,Utilidade Pública,ALUP11.SA
+AMBP3,Ambipar ON,Ação,Outros,AMBP3.SA
+AMER3,Americanas ON,Ação,Consumo Cíclico,AMER3.SA
+ANIM3,Ânima Educação ON,Ação,Outros,ANIM3.SA
+ASAI3,Assaí ON,Ação,Consumo Não Cíclico,ASAI3.SA
+AURE3,Auren Energia ON,Ação,Utilidade Pública,AURE3.SA
+AXIA3,Axia Energia ON,Ação,Utilidade Pública,AXIA3.SA
+AZUL3,Azul ON,Ação,Bens Industriais,AZUL3.SA
+AZZA3,Azzas 2154 ON,Ação,Consumo Cíclico,AZZA3.SA
+B3SA3,B3 ON,Ação,Financeiro,B3SA3.SA
+BBAS3,Banco do Brasil ON,Ação,Financeiro,BBAS3.SA
+BBDC3,Bradesco ON,Ação,Financeiro,BBDC3.SA
+BBDC4,Bradesco PN,Ação,Financeiro,BBDC4.SA
+BBSE3,BB Seguridade ON,Ação,Financeiro,BBSE3.SA
+BEEF3,Minerva ON,Ação,Consumo Não Cíclico,BEEF3.SA
+BHIA3,Casas Bahia ON,Ação,Consumo Cíclico,BHIA3.SA
+BPAC11,BTG Pactual Unit,Ação,Financeiro,BPAC11.SA
+BRAP4,Bradespar PN,Ação,Financeiro,BRAP4.SA
+BRAV3,Brava Energia ON,Ação,Petróleo e Gás,BRAV3.SA
+BRKM5,Braskem PNA,Ação,Materiais Básicos,BRKM5.SA
+CAML3,Camil Alimentos ON,Ação,Consumo Não Cíclico,CAML3.SA
+CASH3,Méliuz ON,Ação,Tecnologia da Informação,CASH3.SA
+CBAV3,CBA ON,Ação,Materiais Básicos,CBAV3.SA
+MOTV3,Motiva ON,Ação,Bens Industriais,MOTV3.SA
+CEAB3,C&A Brasil ON,Ação,Consumo Cíclico,CEAB3.SA
+CMIG3,Cemig ON,Ação,Utilidade Pública,CMIG3.SA
+CMIG4,Cemig PN,Ação,Utilidade Pública,CMIG4.SA
+CMIN3,CSN Mineração ON,Ação,Mineração,CMIN3.SA
+COGN3,Cogna ON,Ação,Outros,COGN3.SA
+CPFE3,CPFL Energia ON,Ação,Utilidade Pública,CPFE3.SA
+CPLE3,Copel ON,Ação,Utilidade Pública,CPLE3.SA
+CPLE6,Copel PNB,Ação,Utilidade Pública,CPLE6.SA
+CSAN3,Cosan ON,Ação,Petróleo e Gás,CSAN3.SA
+CSMG3,Copasa ON,Ação,Utilidade Pública,CSMG3.SA
+CSNA3,Siderúrgica Nacional ON,Ação,Siderurgia e Metalurgia,CSNA3.SA
+CURY3,Cury ON,Ação,Consumo Cíclico,CURY3.SA
+CVCB3,CVC Brasil ON,Ação,Consumo Cíclico,CVCB3.SA
+CXSE3,Caixa Seguridade ON,Ação,Financeiro,CXSE3.SA
+CYRE3,Cyrela ON,Ação,Consumo Cíclico,CYRE3.SA
+DIRR3,Direcional ON,Ação,Consumo Cíclico,DIRR3.SA
+DXCO3,Dexco ON,Ação,Materiais Básicos,DXCO3.SA
+EGIE3,Engie Brasil ON,Ação,Utilidade Pública,EGIE3.SA
+EMBJ3,Embraer ON,Ação,Bens Industriais,EMBJ3.SA
+ENEV3,Eneva ON,Ação,Utilidade Pública,ENEV3.SA
+ENGI11,Energisa Unit,Ação,Utilidade Pública,ENGI11.SA
+EQTL3,Equatorial ON,Ação,Utilidade Pública,EQTL3.SA
+EVEN3,Even ON,Ação,Consumo Cíclico,EVEN3.SA
+EZTC3,EZTEC ON,Ação,Consumo Cíclico,EZTC3.SA
+FLRY3,Fleury ON,Ação,Saúde,FLRY3.SA
+GGBR3,Gerdau ON,Ação,Siderurgia e Metalurgia,GGBR3.SA
+GGBR4,Gerdau PN,Ação,Siderurgia e Metalurgia,GGBR4.SA
+GGPS3,GPS ON,Ação,Bens Industriais,GGPS3.SA
+GOAU4,Metalúrgica Gerdau PN,Ação,Siderurgia e Metalurgia,GOAU4.SA
+RIAA3,Riachuelo ON,Ação,Consumo Cíclico,RIAA3.SA
+HAPV3,Hapvida ON,Ação,Saúde,HAPV3.SA
+HBSA3,Hidrovias do Brasil ON,Ação,Bens Industriais,HBSA3.SA
+IGTI11,Iguatemi Unit,Ação,Financeiro,IGTI11.SA
+INTB3,Intelbras ON,Ação,Tecnologia da Informação,INTB3.SA
+IRBR3,IRB Brasil ON,Ação,Financeiro,IRBR3.SA
+ITSA3,Itaúsa ON,Ação,Financeiro,ITSA3.SA
+ITSA4,Itaúsa PN,Ação,Financeiro,ITSA4.SA
+ITUB3,Itaú Unibanco ON,Ação,Financeiro,ITUB3.SA
+ITUB4,Itaú Unibanco PN,Ação,Financeiro,ITUB4.SA
+JBSS3,JBS ON,Ação,Consumo Não Cíclico,JBSS3.SA
+JHSF3,JHSF ON,Ação,Consumo Cíclico,JHSF3.SA
+JSLG3,JSL ON,Ação,Bens Industriais,JSLG3.SA
+KEPL3,Kepler Weber ON,Ação,Bens Industriais,KEPL3.SA
+KLBN11,Klabin Unit,Ação,Papel e Celulose,KLBN11.SA
+KLBN4,Klabin PN,Ação,Papel e Celulose,KLBN4.SA
+LJQQ3,Lojas Quero-Quero ON,Ação,Consumo Cíclico,LJQQ3.SA
+LOGG3,Log Commercial Properties ON,Ação,Financeiro,LOGG3.SA
+LREN3,Lojas Renner ON,Ação,Consumo Cíclico,LREN3.SA
+LWSA3,Locaweb ON,Ação,Tecnologia da Informação,LWSA3.SA
+MATD3,Mater Dei ON,Ação,Saúde,MATD3.SA
+MDIA3,M. Dias Branco ON,Ação,Consumo Não Cíclico,MDIA3.SA
+MGLU3,Magazine Luiza ON,Ação,Consumo Cíclico,MGLU3.SA
+MILS3,Mills ON,Ação,Bens Industriais,MILS3.SA
+MOVI3,Movida ON,Ação,Bens Industriais,MOVI3.SA
+MBRF3,MBRF ON,Ação,Consumo Não Cíclico,MBRF3.SA
+MRVE3,MRV ON,Ação,Consumo Cíclico,MRVE3.SA
+MULT3,Multiplan ON,Ação,Financeiro,MULT3.SA
+NEOE3,Neoenergia ON,Ação,Utilidade Pública,NEOE3.SA
+NATU3,Natura ON,Ação,Consumo Cíclico,NATU3.SA
+SAUD3,Odontoprev ON,Ação,Saúde,SAUD3.SA
+ONCO3,Oncoclínicas ON,Ação,Saúde,ONCO3.SA
+PCAR3,Grupo Pão de Açúcar ON,Ação,Consumo Não Cíclico,PCAR3.SA
+PETR3,Petrobras ON,Ação,Petróleo e Gás,PETR3.SA
+PETR4,Petrobras PN,Ação,Petróleo e Gás,PETR4.SA
+PLPL3,Plano&Plano ON,Ação,Consumo Cíclico,PLPL3.SA
+POMO4,Marcopolo PN,Ação,Bens Industriais,POMO4.SA
+POSI3,Positivo Tecnologia ON,Ação,Tecnologia da Informação,POSI3.SA
+PRIO3,PRIO ON,Ação,Petróleo e Gás,PRIO3.SA
+PSSA3,Porto Seguro ON,Ação,Financeiro,PSSA3.SA
+RADL3,RD Saúde ON,Ação,Saúde,RADL3.SA
+RAIL3,Rumo ON,Ação,Bens Industriais,RAIL3.SA
+RAIZ4,Raízen PN,Ação,Petróleo e Gás,RAIZ4.SA
+RANI3,Irani ON,Ação,Papel e Celulose,RANI3.SA
+RDOR3,Rede D'Or ON,Ação,Saúde,RDOR3.SA
+RECV3,PetroReconcavo ON,Ação,Petróleo e Gás,RECV3.SA
+RENT3,Localiza ON,Ação,Bens Industriais,RENT3.SA
+SANB11,Santander Unit,Ação,Financeiro,SANB11.SA
+SBFG3,Grupo SBF ON,Ação,Consumo Cíclico,SBFG3.SA
+SBSP3,Sabesp ON,Ação,Utilidade Pública,SBSP3.SA
+SEER3,Ser Educacional ON,Ação,Outros,SEER3.SA
+SIMH3,Simpar ON,Ação,Bens Industriais,SIMH3.SA
+SMTO3,São Martinho ON,Ação,Consumo Não Cíclico,SMTO3.SA
+STBP3,Santos Brasil ON,Ação,Bens Industriais,STBP3.SA
+SUZB3,Suzano ON,Ação,Papel e Celulose,SUZB3.SA
+TAEE11,Taesa Unit,Ação,Utilidade Pública,TAEE11.SA
+TEND3,Construtora Tenda ON,Ação,Consumo Cíclico,TEND3.SA
+TGMA3,Tegma ON,Ação,Bens Industriais,TGMA3.SA
+TIMS3,TIM ON,Ação,Telecomunicações,TIMS3.SA
+TOTS3,Totvs ON,Ação,Tecnologia da Informação,TOTS3.SA
+ISAE4,ISA Energia Brasil PN,Ação,Utilidade Pública,ISAE4.SA
+TUPY3,Tupy ON,Ação,Bens Industriais,TUPY3.SA
+UGPA3,Ultrapar ON,Ação,Petróleo e Gás,UGPA3.SA
+UNIP6,Unipar PNB,Ação,Materiais Básicos,UNIP6.SA
+USIM5,Usiminas PNA,Ação,Siderurgia e Metalurgia,USIM5.SA
+VALE3,Vale ON,Ação,Mineração,VALE3.SA
+VBBR3,Vibra Energia ON,Ação,Petróleo e Gás,VBBR3.SA
+VIVA3,Vivara ON,Ação,Consumo Cíclico,VIVA3.SA
+VIVT3,Telefônica Brasil ON,Ação,Telecomunicações,VIVT3.SA
+VLID3,Valid ON,Ação,Tecnologia da Informação,VLID3.SA
+WEGE3,WEG ON,Ação,Bens Industriais,WEGE3.SA
+WIZC3,Wiz Co ON,Ação,Financeiro,WIZC3.SA
+YDUQ3,YDUQS ON,Ação,Outros,YDUQ3.SA

@@ -1,0 +1,38 @@
+DEFAULT_TICKERS = [
+    "PETR4.SA",
+    "PRIO3.SA",
+    "VALE3.SA",
+    "CMIN3.SA",
+    "WEGE3.SA",
+    "ITUB4.SA",
+    "BBAS3.SA",
+]
+
+PERIOD_OPTIONS = {
+    "1 ano": "1y",
+    "3 anos": "3y",
+    "5 anos": "5y",
+    "10 anos": "10y",
+}
+
+FREQUENCY_OPTIONS = {
+    "Semanal": "W",
+    "Mensal": "M",
+    "Trimestral": "Q",
+}
+
+ANALYSIS_MODES = [
+    "Correlação tradicional",
+    "Correlação ajustada por índice",
+]
+
+REFERENCE_INDEXES = {
+    "Ibovespa": "^BVSP",
+    "S&P 500": "^GSPC",
+    "Nasdaq 100": "^NDX",
+}
+
+MIN_OBSERVATIONS = 20
+MIN_COMMON_OBSERVATIONS = 5
+HIGH_CORRELATION_THRESHOLD = 0.70
+LOW_CORRELATION_THRESHOLD = 0.30
