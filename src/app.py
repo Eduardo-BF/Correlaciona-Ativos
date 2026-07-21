@@ -1,9 +1,11 @@
-import inspect
+﻿import inspect
 from html import escape
 
 import plotly.graph_objects as go
+import plotly.io as pio
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from analytics import calcular_correlacao, calcular_retornos, listar_pares_correlacao
 from assets_catalog import (
@@ -61,15 +63,15 @@ def estilo_classificacao(classificacao: str) -> dict[str, str]:
         },
         "Correlação moderada": {
             "background": "rgba(242, 206, 206, 0.30)",
-            "color": "#8A3A3A",
+            "color": "#ECA1A1",
         },
         "Baixa correlação": {
             "background": "rgba(114, 150, 204, 0.18)",
-            "color": "#2F5FA7",
+            "color": "#C1CBDB",
         },
         "Correlação negativa": {
             "background": "rgba(47, 95, 167, 0.20)",
-            "color": "#248671",
+            "color": "#6B9ED1",
         },
     }
     return estilos.get(classificacao, estilos["Correlação moderada"])
@@ -230,8 +232,7 @@ def renderizar_busca_ativo(opcoes: list[str]) -> None:
             "on_change": adicionar_ativo_do_seletor,
             "accept_new_options": True,
             "help": (
-                "Busque um ativo do catálogo ou digite um ticker manual que não "
-                "esteja no CSV."
+                "Busque um ativo do catálogo ou digite um ticker manual."
             ),
         }
         if selectbox_aceita_placeholder():
@@ -332,56 +333,59 @@ def extrair_ponto_selecionado(evento_grafico) -> tuple[int, int] | None:
     ponto = pontos[0]
     x = ponto.get("x") if isinstance(ponto, dict) else getattr(ponto, "x", None)
     y = ponto.get("y") if isinstance(ponto, dict) else getattr(ponto, "y", None)
+
     if x is None or y is None:
+        indice_ponto = (
+            ponto.get("point_number")
+            if isinstance(ponto, dict)
+            else getattr(ponto, "point_number", None)
+        )
+        if indice_ponto is None:
+            indice_ponto = (
+                ponto.get("point_index")
+                if isinstance(ponto, dict)
+                else getattr(ponto, "point_index", None)
+            )
+        if isinstance(indice_ponto, (list, tuple)) and len(indice_ponto) == 2:
+            return int(indice_ponto[1]), int(indice_ponto[0])
         return None
+
     return int(x), int(y)
 
 
 def adicionar_destaque_heatmap(
     figura, tamanho: int, x_selecionado: int, y_selecionado: int
 ) -> None:
-    for y in range(tamanho):
-        for x in range(tamanho):
-            if x == x_selecionado or y == y_selecionado:
-                continue
-            figura.add_shape(
-                type="rect",
-                x0=x - 0.5,
-                x1=x + 0.5,
-                y0=y - 0.5,
-                y1=y + 0.5,
-                line={"width": 0},
-                fillcolor="rgba(17, 24, 39, 0.18)",
-                layer="above",
-            )
+    def adicionar_cobertura(x0: float, x1: float, y0: float, y1: float) -> None:
+        if x1 <= x0 or y1 <= y0:
+            return
+
+        figura.add_shape(
+            type="rect",
+            x0=x0,
+            x1=x1,
+            y0=y0,
+            y1=y1,
+            line={"width": 0},
+            fillcolor="rgba(17, 24, 39, 0.42)",
+            layer="above",
+        )
+
+    limite_minimo = -0.5
+    limite_maximo = tamanho - 0.5
+    linha_superior = y_selecionado - 0.5
+    linha_inferior = y_selecionado + 0.5
+
+    adicionar_cobertura(limite_minimo, limite_maximo, limite_minimo, linha_superior)
+    adicionar_cobertura(limite_minimo, limite_maximo, linha_inferior, limite_maximo)
 
     figura.add_shape(
         type="rect",
-        x0=-0.5,
-        x1=tamanho - 0.5,
-        y0=y_selecionado - 0.5,
-        y1=y_selecionado + 0.5,
-        line={"width": 1, "color": "rgba(17, 24, 39, 0.18)"},
-        fillcolor="rgba(255, 255, 255, 0.18)",
-        layer="above",
-    )
-    figura.add_shape(
-        type="rect",
-        x0=x_selecionado - 0.5,
-        x1=x_selecionado + 0.5,
-        y0=-0.5,
-        y1=tamanho - 0.5,
-        line={"width": 1, "color": "rgba(17, 24, 39, 0.18)"},
-        fillcolor="rgba(255, 255, 255, 0.18)",
-        layer="above",
-    )
-    figura.add_shape(
-        type="rect",
-        x0=x_selecionado - 0.5,
-        x1=x_selecionado + 0.5,
-        y0=y_selecionado - 0.5,
-        y1=y_selecionado + 0.5,
-        line={"width": 3, "color": "rgba(17, 24, 39, 0.90)"},
+        x0=limite_minimo,
+        x1=limite_maximo,
+        y0=linha_superior,
+        y1=linha_inferior,
+        line={"width": 2, "color": "rgba(17, 24, 39, 0.75)"},
         fillcolor="rgba(255, 255, 255, 0)",
         layer="above",
     )
@@ -475,6 +479,209 @@ PLOTLY_CONFIG = {
     "showAxisRangeEntryBoxes": False,
     "staticPlot": False,
 }
+
+
+def renderizar_heatmap_com_destaque_linha(
+    figura: go.Figure, altura: int, tamanho: int
+) -> None:
+    div_id = "heatmap_correlacao_interativo"
+    argumentos_html = {
+        "fig": figura,
+        "config": PLOTLY_CONFIG,
+        "full_html": False,
+        "include_plotlyjs": True,
+    }
+    if "div_id" in inspect.signature(pio.to_html).parameters:
+        argumentos_html["div_id"] = div_id
+
+    grafico_html = pio.to_html(**argumentos_html)
+    estilos_html = """
+    <style>
+        html,
+        body {
+            background: transparent;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    """
+    script_hover = f"""
+    <script>
+    (function() {{
+        const tamanho = {tamanho};
+        const grafico = document.getElementById("{div_id}") ||
+            document.querySelector(".plotly-graph-div");
+
+        if (!grafico || !window.Plotly) {{
+            return;
+        }}
+
+        const wrapper = grafico.parentElement;
+        wrapper.style.position = "relative";
+
+        const tooltip = document.createElement("div");
+        tooltip.style.position = "absolute";
+        tooltip.style.display = "none";
+        tooltip.style.pointerEvents = "none";
+        tooltip.style.zIndex = "1000";
+        tooltip.style.maxWidth = "260px";
+        tooltip.style.padding = "0.55rem 0.65rem";
+        tooltip.style.border = "1px solid rgba(17, 24, 39, 0.18)";
+        tooltip.style.borderRadius = "6px";
+        tooltip.style.background = "rgba(255, 255, 255, 0.96)";
+        tooltip.style.boxShadow = "0 8px 24px rgba(17, 24, 39, 0.18)";
+        tooltip.style.color = "#111827";
+        tooltip.style.fontFamily = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+        tooltip.style.fontSize = "0.78rem";
+        tooltip.style.lineHeight = "1.25";
+        wrapper.appendChild(tooltip);
+
+        const limiteMinimo = -0.5;
+        const limiteMaximo = tamanho - 0.5;
+
+        function escaparHtml(valor) {{
+            return String(valor)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }}
+
+        function centroCelula(ponto) {{
+            const layout = grafico._fullLayout;
+            const eixoX = layout.xaxis;
+            const eixoY = layout.yaxis;
+            const x = Number(ponto.x);
+            const y = Number(ponto.y);
+
+            if (
+                !eixoX ||
+                !eixoY ||
+                Number.isNaN(x) ||
+                Number.isNaN(y) ||
+                typeof eixoX.l2p !== "function" ||
+                typeof eixoY.l2p !== "function"
+            ) {{
+                const wrapperRect = wrapper.getBoundingClientRect();
+                return {{
+                    x: wrapperRect.width / 2,
+                    y: wrapperRect.height / 2
+                }};
+            }}
+
+            return {{
+                x: eixoX._offset + eixoX.l2p(x),
+                y: eixoY._offset + eixoY.l2p(y)
+            }};
+        }}
+
+        function mostrarTooltip(ponto) {{
+            const dados = ponto.customdata || [];
+            tooltip.innerHTML = `
+                <div style="font-weight: 700; margin-bottom: 0.2rem;">
+                    ${{escaparHtml(dados[0])}} × ${{escaparHtml(dados[1])}}
+                </div>
+                <div>Correlação: ${{escaparHtml(dados[2])}}</div>
+                <div>Classificação: ${{escaparHtml(dados[3])}}</div>
+            `;
+            tooltip.style.display = "block";
+
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const centro = centroCelula(ponto);
+            const margem = 8;
+
+            let left = centro.x - tooltip.offsetWidth / 2;
+            left = Math.max(margem, Math.min(left, wrapperRect.width - tooltip.offsetWidth - margem));
+
+            let top = centro.y - tooltip.offsetHeight - 24;
+            if (top < margem) {{
+                top = centro.y + 18;
+            }}
+            top = Math.max(margem, Math.min(top, wrapperRect.height - tooltip.offsetHeight - margem));
+
+            tooltip.style.left = `${{left}}px`;
+            tooltip.style.top = `${{top}}px`;
+        }}
+
+        function esconderTooltip() {{
+            tooltip.style.display = "none";
+        }}
+
+        function coberturaLinha(y) {{
+            const linhaSuperior = y - 0.5;
+            const linhaInferior = y + 0.5;
+            const cobertura = "rgba(17, 24, 39, 0.42)";
+            const borda = "rgba(17, 24, 39, 0.85)";
+
+            return [
+                {{
+                    type: "rect",
+                    xref: "x",
+                    yref: "y",
+                    x0: limiteMinimo,
+                    x1: limiteMaximo,
+                    y0: limiteMinimo,
+                    y1: linhaSuperior,
+                    line: {{width: 0}},
+                    fillcolor: cobertura,
+                    layer: "above"
+                }},
+                {{
+                    type: "rect",
+                    xref: "x",
+                    yref: "y",
+                    x0: limiteMinimo,
+                    x1: limiteMaximo,
+                    y0: linhaInferior,
+                    y1: limiteMaximo,
+                    line: {{width: 0}},
+                    fillcolor: cobertura,
+                    layer: "above"
+                }},
+                {{
+                    type: "rect",
+                    xref: "x",
+                    yref: "y",
+                    x0: limiteMinimo,
+                    x1: limiteMaximo,
+                    y0: linhaSuperior,
+                    y1: linhaInferior,
+                    line: {{width: 2, color: borda}},
+                    fillcolor: "rgba(255, 255, 255, 0)",
+                    layer: "above"
+                }}
+            ];
+        }}
+
+        grafico.on("plotly_hover", function(evento) {{
+            if (!evento || !evento.points || !evento.points.length) {{
+                return;
+            }}
+
+            const y = Number(evento.points[0].y);
+            if (Number.isNaN(y)) {{
+                return;
+            }}
+
+            window.Plotly.relayout(grafico, {{shapes: coberturaLinha(y)}});
+            mostrarTooltip(evento.points[0]);
+        }});
+
+        grafico.on("plotly_unhover", function() {{
+            window.Plotly.relayout(grafico, {{shapes: []}});
+            esconderTooltip();
+        }});
+    }})();
+    </script>
+    """
+
+    components.html(
+        estilos_html + grafico_html + script_hover,
+        height=altura + 32,
+        scrolling=False,
+    )
+
 
 RESULTADO_CORRELACAO_KEY = "resultado_correlacao"
 HEATMAP_DESTACADO_KEY = "celula_heatmap_destacada"
@@ -598,12 +805,21 @@ RESULTADOS_CSS = """
         margin: 0;
     }
     section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] button {
+        background: rgba(207, 48, 48, 0.10);
+        border-color: rgba(207, 48, 48, 0.55);
         border-radius: 4px;
+        color: #cf3030;
         min-height: 1.35rem;
         height: 1.35rem;
         padding: 0 0.45rem;
     }
+    section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] button:hover {
+        background: rgba(207, 48, 48, 0.18);
+        border-color: rgba(207, 48, 48, 0.85);
+        color: #cf3030;
+    }
     section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] button p {
+        color: #cf3030;
         font-size: 0.76rem;
         line-height: 1;
         margin: 0;
@@ -941,6 +1157,7 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
     matriz_exibicao = renomear_para_tickers_limpos(matriz)
     pares_exibicao = pares_da_matriz(matriz_exibicao)
     ativos_heatmap = list(matriz_exibicao.columns)
+    rotulos_heatmap = [f"<b>{escape(ativo)}</b>" for ativo in ativos_heatmap]
     indices_heatmap = list(range(len(ativos_heatmap)))
     textos_heatmap = matriz_exibicao.applymap(formatar_correlacao).to_numpy()
     dados_hover = [
@@ -971,7 +1188,7 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
             customdata=dados_hover,
             colorscale=[
                 [0.0, "#2F5FA7"],
-                [0.3, "#7296cc"],
+                [0.2, "#7296cc"],
                 [0.5, "#FFFFFF"],
                 [0.8, "#f2cece"],
                 [1.0, "#EF6A6A"],
@@ -980,11 +1197,7 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
             zmax=1,
             texttemplate="<b>%{text}</b>",
             textfont={"color": "#111827"},
-            hovertemplate=(
-                "<b>%{customdata[0]} × %{customdata[1]}</b><br>"
-                "Correlação: %{customdata[2]}<br>"
-                "Classificação: %{customdata[3]}<extra></extra>"
-            ),
+            hoverinfo="none",
             colorbar={
                 "title": "Correlação",
                 "tickvals": [-1, -0.5, 0, 0.5, 1],
@@ -996,8 +1209,9 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
         side="top",
         tickmode="array",
         tickvals=indices_heatmap,
-        ticktext=ativos_heatmap,
+        ticktext=rotulos_heatmap,
         tickangle=-35 if len(ativos_heatmap) > 8 else 0,
+        tickfont={"color": "#F3F4F6", "size": 12},
         fixedrange=True,
         showgrid=False,
         showspikes=False,
@@ -1005,71 +1219,28 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
     figura.update_yaxes(
         tickmode="array",
         tickvals=indices_heatmap,
-        ticktext=ativos_heatmap,
+        ticktext=rotulos_heatmap,
         autorange="reversed",
+        tickfont={"color": "#F3F4F6", "size": 12},
         fixedrange=True,
         showgrid=False,
         showspikes=False,
     )
+    altura_heatmap = max(420, min(760, 56 * len(ativos_heatmap) + 180))
     figura.update_layout(
         clickmode="event+select",
         dragmode=False,
-        height=max(420, min(760, 56 * len(ativos_heatmap) + 180)),
+        height=altura_heatmap,
         margin={"l": 72, "r": 24, "t": 92, "b": 32},
+        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor="rgba(0, 0, 0, 0)",
     )
 
-    celula_destacada = st.session_state.get(HEATMAP_DESTACADO_KEY)
-    if celula_destacada:
-        x_destacado, y_destacado = celula_destacada
-        if x_destacado in indices_heatmap and y_destacado in indices_heatmap:
-            adicionar_destaque_heatmap(
-                figura, len(ativos_heatmap), x_destacado, y_destacado
-            )
-
-    try:
-        evento_grafico = st.plotly_chart(
-            figura,
-            use_container_width=True,
-            key="heatmap_correlacao",
-            on_select="rerun",
-            selection_mode="points",
-            config=PLOTLY_CONFIG,
-        )
-    except TypeError:
-        evento_grafico = None
-        st.plotly_chart(figura, use_container_width=True, config=PLOTLY_CONFIG)
-
-    ponto_selecionado = extrair_ponto_selecionado(evento_grafico)
-    if ponto_selecionado and ponto_selecionado != celula_destacada:
-        x_selecionado, y_selecionado = ponto_selecionado
-        if x_selecionado in indices_heatmap and y_selecionado in indices_heatmap:
-            st.session_state[HEATMAP_DESTACADO_KEY] = ponto_selecionado
-            st.rerun()
-
-    celula_destacada = st.session_state.get(HEATMAP_DESTACADO_KEY)
-    if celula_destacada:
-        x_destacado, y_destacado = celula_destacada
-        if (
-            x_destacado in indices_heatmap
-            and y_destacado in indices_heatmap
-            and x_destacado != y_destacado
-        ):
-            ativo_1 = ativos_heatmap[y_destacado]
-            ativo_2 = ativos_heatmap[x_destacado]
-            correlacao_destacada = float(matriz_exibicao.loc[ativo_1, ativo_2])
-            renderizar_resumo_par(
-                {
-                    "Ativo 1": ativo_1,
-                    "Ativo 2": ativo_2,
-                    "Correlação": correlacao_destacada,
-                    "Classificação": classificar_correlacao_visual(
-                        correlacao_destacada
-                    ),
-                    "Interpretação": interpretar_correlacao(
-                        correlacao_destacada
-                    ),
-                }
-            )
+    renderizar_heatmap_com_destaque_linha(
+        figura,
+        altura_heatmap,
+        len(ativos_heatmap),
+    )
 
     st.subheader("Destaques")
     cards_resumo = obter_cards_resumo(pares_exibicao)
