@@ -3,9 +3,8 @@ DEFAULT_TICKERS = [
     "PRIO3.SA",
     "VALE3.SA",
     "CMIN3.SA",
-    "WEGE3.SA",
     "ITUB4.SA",
-    "BBAS3.SA",
+    "BBDC4.SA",
 ]
 
 PERIOD_OPTIONS = {
