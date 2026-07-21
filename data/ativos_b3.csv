@@ -131,3 +131,7 @@ VLID3,Valid ON,Ação,Tecnologia da Informação,VLID3.SA
 WEGE3,WEG ON,Ação,Bens Industriais,WEGE3.SA
 WIZC3,Wiz Co ON,Ação,Financeiro,WIZC3.SA
 YDUQ3,YDUQS ON,Ação,Outros,YDUQ3.SA
+BOVA11,iShares Ibovespa,ETF,ETF,BOVA11.SA
+IVVB11,iShares S&P 500,ETF,ETF,IVVB11.SA
+SMAL11,iShares Small Cap,ETF,ETF,SMAL11.SA
+HASH11,Hashdex Nasdaq Crypto Index,ETF,ETF,HASH11.SA

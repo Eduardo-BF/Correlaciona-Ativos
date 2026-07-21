@@ -1,3 +1,4 @@
+import inspect
 from html import escape
 
 import plotly.graph_objects as go
@@ -18,6 +19,7 @@ from config import (
     FREQUENCY_OPTIONS,
     HIGH_CORRELATION_THRESHOLD,
     LOW_CORRELATION_THRESHOLD,
+    MIN_COMMON_OBSERVATIONS,
     MIN_OBSERVATIONS,
     PERIOD_OPTIONS,
     REFERENCE_INDEXES,
@@ -146,6 +148,168 @@ def filtrar_pares(pares: list[dict], filtro: str) -> list[dict]:
     if filtro == "Todos":
         return pares
     return [par for par in pares if par["Classificação"] == filtro]
+
+
+def formatar_data(data) -> str:
+    if pd.isna(data):
+        return "-"
+    return pd.Timestamp(data).strftime("%d/%m/%Y")
+
+
+def formatar_lista_tickers(tickers: list[str]) -> str:
+    return ", ".join(ticker_limpo(ticker) for ticker in tickers)
+
+
+def obter_chave_selecao_ativo(selecao: str) -> str:
+    tickers = selecoes_para_tickers_yahoo([selecao], catalogo_ativos)
+    if tickers:
+        return tickers[0]
+    return str(selecao).strip().upper()
+
+
+def adicionar_selecao_ativo(selecao: str) -> None:
+    if selecao is None:
+        return
+
+    selecao = str(selecao).strip()
+    if not selecao:
+        return
+
+    selecionados = st.session_state.setdefault(SELECOES_ATIVOS_KEY, [])
+    ticker_novo = obter_chave_selecao_ativo(selecao)
+    tickers_atuais = {
+        obter_chave_selecao_ativo(ativo)
+        for ativo in selecionados
+        if str(ativo).strip()
+    }
+
+    if ticker_novo not in tickers_atuais:
+        selecionados.append(selecao)
+
+
+def adicionar_ativo_do_seletor() -> None:
+    adicionar_selecao_ativo(st.session_state.get(ATIVO_ADICIONAR_KEY, ""))
+    if selectbox_aceita_novas_opcoes() and selectbox_aceita_placeholder():
+        st.session_state[ATIVO_ADICIONAR_KEY] = None
+    else:
+        st.session_state[ATIVO_ADICIONAR_KEY] = ""
+
+
+def remover_selecao_ativo(indice: int) -> None:
+    selecionados = st.session_state.get(SELECOES_ATIVOS_KEY, [])
+    if 0 <= indice < len(selecionados):
+        del selecionados[indice]
+
+
+def deduplicar_selecoes_ativos(selecoes: list[str]) -> list[str]:
+    resultado = []
+    vistos = set()
+    for selecao in selecoes:
+        chave = obter_chave_selecao_ativo(selecao)
+        if chave and chave not in vistos:
+            resultado.append(selecao)
+            vistos.add(chave)
+    return resultado
+
+
+def selectbox_aceita_novas_opcoes() -> bool:
+    return "accept_new_options" in inspect.signature(st.selectbox).parameters
+
+
+def selectbox_aceita_placeholder() -> bool:
+    return "placeholder" in inspect.signature(st.selectbox).parameters
+
+
+def renderizar_busca_ativo(opcoes: list[str]) -> None:
+    placeholder = "Digite para buscar ticker ou nome"
+    if selectbox_aceita_novas_opcoes():
+        argumentos_selectbox = {
+            "label": "Buscar ativo",
+            "options": opcoes,
+            "key": ATIVO_ADICIONAR_KEY,
+            "on_change": adicionar_ativo_do_seletor,
+            "accept_new_options": True,
+            "help": (
+                "Busque um ativo do catálogo ou digite um ticker manual que não "
+                "esteja no CSV."
+            ),
+        }
+        if selectbox_aceita_placeholder():
+            argumentos_selectbox["index"] = None
+            argumentos_selectbox["placeholder"] = placeholder
+        else:
+            argumentos_selectbox["options"] = ["", *opcoes]
+            argumentos_selectbox["format_func"] = (
+                lambda opcao: placeholder if not opcao else opcao
+            )
+
+        st.selectbox(**argumentos_selectbox)
+        return
+
+    st.text_input(
+        "Buscar ativo",
+        placeholder="Digite um ticker, como PETR4 ou BOVA11",
+        key=ATIVO_ADICIONAR_KEY,
+        on_change=adicionar_ativo_do_seletor,
+        help=(
+            "Sua versão do Streamlit não permite sugestões e tickers manuais no "
+            "mesmo selectbox; este campo aceita o ticker manual."
+        ),
+    )
+
+
+def alinhar_janela_comum(
+    retornos_ativos: pd.DataFrame,
+    retorno_benchmark: pd.Series | None = None,
+) -> tuple[pd.DataFrame, pd.Series | None]:
+    if retornos_ativos.empty:
+        return pd.DataFrame(), None
+
+    retornos_ativos = retornos_ativos.dropna(axis=1, how="all")
+    if retorno_benchmark is None:
+        return retornos_ativos.dropna(how="any"), None
+
+    benchmark = retorno_benchmark.rename("__benchmark__")
+    dados_alinhados = pd.concat(
+        [retornos_ativos, benchmark], axis=1, join="inner"
+    ).dropna(how="any")
+    if dados_alinhados.empty:
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    return (
+        dados_alinhados.drop(columns="__benchmark__"),
+        dados_alinhados["__benchmark__"],
+    )
+
+
+def identificar_limitadores_janela(
+    retornos_ativos: pd.DataFrame,
+    retorno_benchmark: pd.Series | None,
+    inicio_efetivo,
+) -> list[str]:
+    inicios = {}
+    for ticker in retornos_ativos.columns:
+        serie = retornos_ativos[ticker].dropna()
+        if not serie.empty:
+            inicios[ticker] = serie.index.min()
+
+    if retorno_benchmark is not None:
+        benchmark = retorno_benchmark.dropna()
+        if not benchmark.empty:
+            inicios["benchmark"] = benchmark.index.min()
+
+    if not inicios or pd.isna(inicio_efetivo):
+        return []
+
+    inicio_mais_antigo = min(inicios.values())
+    if pd.Timestamp(inicio_efetivo) <= pd.Timestamp(inicio_mais_antigo):
+        return []
+
+    return [
+        ticker
+        for ticker, inicio in inicios.items()
+        if pd.Timestamp(inicio) == pd.Timestamp(inicio_efetivo)
+    ]
 
 
 def extrair_ponto_selecionado(evento_grafico) -> tuple[int, int] | None:
@@ -292,12 +456,30 @@ def renderizar_resumo_par(par: dict) -> None:
 
 PLOTLY_CONFIG = {
     "displayModeBar": False,
+    "doubleClick": False,
     "editable": False,
+    "edits": {
+        "annotationPosition": False,
+        "annotationTail": False,
+        "annotationText": False,
+        "axisTitleText": False,
+        "colorbarPosition": False,
+        "colorbarTitleText": False,
+        "legendPosition": False,
+        "legendText": False,
+        "shapePosition": False,
+        "titleText": False,
+    },
     "scrollZoom": False,
+    "showAxisDragHandles": False,
+    "showAxisRangeEntryBoxes": False,
+    "staticPlot": False,
 }
 
 RESULTADO_CORRELACAO_KEY = "resultado_correlacao"
 HEATMAP_DESTACADO_KEY = "celula_heatmap_destacada"
+SELECOES_ATIVOS_KEY = "ativos_selecionados"
+ATIVO_ADICIONAR_KEY = "ativo_para_adicionar"
 
 
 RESULTADOS_CSS = """
@@ -400,6 +582,32 @@ RESULTADOS_CSS = """
             text-align: left;
         }
     }
+    section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] {
+        align-items: center;
+        gap: 0.25rem;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] [data-testid="stMarkdownContainer"] p {
+        font-size: 0.76rem;
+        line-height: 1.05;
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] [data-testid="stButton"] {
+        margin: 0;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] button {
+        border-radius: 4px;
+        min-height: 1.35rem;
+        height: 1.35rem;
+        padding: 0 0.45rem;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stHorizontalBlock"] button p {
+        font-size: 0.76rem;
+        line-height: 1;
+        margin: 0;
+    }
     </style>
     """
 
@@ -427,15 +635,56 @@ opcoes_catalogo = opcoes_ativos(catalogo_ativos)
 ativos_padrao = tickers_para_labels(DEFAULT_TICKERS, catalogo_ativos)
 opcoes_seletor = sorted(set(opcoes_catalogo + ativos_padrao))
 
+if SELECOES_ATIVOS_KEY not in st.session_state:
+    st.session_state[SELECOES_ATIVOS_KEY] = list(ativos_padrao)
+else:
+    st.session_state[SELECOES_ATIVOS_KEY] = deduplicar_selecoes_ativos(
+        st.session_state[SELECOES_ATIVOS_KEY]
+    )
+
+if ATIVO_ADICIONAR_KEY not in st.session_state:
+    st.session_state[ATIVO_ADICIONAR_KEY] = (
+        None
+        if selectbox_aceita_novas_opcoes() and selectbox_aceita_placeholder()
+        else ""
+    )
+elif (
+    selectbox_aceita_novas_opcoes()
+    and selectbox_aceita_placeholder()
+    and st.session_state[ATIVO_ADICIONAR_KEY] == ""
+):
+    st.session_state[ATIVO_ADICIONAR_KEY] = None
+
+tickers_selecionados = st.session_state[SELECOES_ATIVOS_KEY]
+tickers_selecionados_chaves = {
+    obter_chave_selecao_ativo(selecao) for selecao in tickers_selecionados
+}
+opcoes_para_adicionar = [
+    opcao
+    for opcao in opcoes_seletor
+    if obter_chave_selecao_ativo(opcao) not in tickers_selecionados_chaves
+]
+
 with st.sidebar:
     st.header("Configuração")
-    tickers_selecionados = st.multiselect(
-        "Ativos",
-        options=opcoes_seletor,
-        default=ativos_padrao,
-        accept_new_options=True,
-        help="Digite outros códigos, como AAPL ou PETR4.",
-    )
+    renderizar_busca_ativo(opcoes_para_adicionar)
+    tickers_selecionados = st.session_state[SELECOES_ATIVOS_KEY]
+    st.caption(f"{len(tickers_selecionados)} ativos selecionados")
+    for indice, selecao in enumerate(tickers_selecionados):
+        coluna_nome, coluna_remover = st.columns(
+            [6, 1],
+            gap="small",
+            vertical_alignment="center",
+        )
+        coluna_nome.markdown(escape(selecao))
+        if coluna_remover.button(
+            "-",
+            key=f"remover_ativo_{indice}_{obter_chave_selecao_ativo(selecao)}",
+            help=f"Remover {selecao}",
+        ):
+            remover_selecao_ativo(indice)
+            st.rerun()
+
     with st.expander("Configurações", expanded=False):
         periodo_nome = st.selectbox(
             "Período",
@@ -480,26 +729,59 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
             precos = buscar_precos(tickers, PERIOD_OPTIONS[periodo_nome])
             if precos.empty:
                 st.error(
-                    "Não foi possível baixar os dados dos ativos. Confira os códigos "
-                    "ou tente novamente mais tarde."
+                    "Não foi possível obter dados para os ativos selecionados. "
+                    "Confira se os tickers manuais são válidos no Yahoo Finance. "
+                    f"Tickers testados: {formatar_lista_tickers(tickers)}."
                 )
                 st.stop()
 
+            ativos_sem_preco = [ticker for ticker in tickers if ticker not in precos.columns]
             precos_filtrados = filtrar_ativos_com_dados_suficientes(
                 precos, MIN_OBSERVATIONS
             )
+            ativos_insuficientes = [
+                ticker
+                for ticker in tickers
+                if ticker in precos.columns and ticker not in precos_filtrados.columns
+            ]
 
             if precos_filtrados.shape[1] < 2:
+                ativos_removidos = ativos_sem_preco + ativos_insuficientes
+                detalhes_removidos = (
+                    f" Ativos removidos: {formatar_lista_tickers(ativos_removidos)}."
+                    if ativos_removidos
+                    else ""
+                )
                 st.error(
                     "Não foi possível obter dados suficientes para pelo menos dois ativos. "
                     "Confira os códigos ou tente novamente mais tarde."
+                    + detalhes_removidos
                 )
                 st.stop()
 
             retornos = calcular_retornos(
                 precos_filtrados, FREQUENCY_OPTIONS[frequencia_nome]
-            )
+            ).dropna(axis=1, how="all")
+            ativos_sem_retorno = [
+                ticker for ticker in precos_filtrados.columns if ticker not in retornos.columns
+            ]
+            if retornos.shape[1] < 2:
+                ativos_removidos = (
+                    ativos_sem_preco + ativos_insuficientes + ativos_sem_retorno
+                )
+                detalhes_removidos = (
+                    f" Ativos removidos: {formatar_lista_tickers(ativos_removidos)}."
+                    if ativos_removidos
+                    else ""
+                )
+                st.error(
+                    "Não foi possível calcular retornos suficientes para pelo menos "
+                    "dois ativos."
+                    + detalhes_removidos
+                )
+                st.stop()
 
+            retorno_indice = None
             if ajuste_por_benchmark:
                 ticker_indice = REFERENCE_INDEXES[benchmark_nome]
                 precos_indice = buscar_precos(
@@ -518,39 +800,89 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
                 retornos_indice = calcular_retornos(
                     precos_indice, FREQUENCY_OPTIONS[frequencia_nome]
                 )
+                retorno_indice = retornos_indice[ticker_indice]
+
+            retornos_alinhados, retorno_indice_alinhado = alinhar_janela_comum(
+                retornos,
+                retorno_indice,
+            )
+            if (
+                retornos_alinhados.shape[1] < 2
+                or len(retornos_alinhados) < MIN_COMMON_OBSERVATIONS
+            ):
+                st.error(
+                    "A janela comum entre os ativos selecionados ficou pequena demais "
+                    "para calcular a matriz. Tente reduzir a quantidade de ativos, "
+                    "aumentar o período ou usar uma frequência mais frequente."
+                )
+                st.stop()
+
+            if ajuste_por_benchmark:
                 matriz = calcular_correlacao_residual(
-                    retornos, retornos_indice[ticker_indice]
+                    retornos_alinhados, retorno_indice_alinhado
                 )
             else:
-                matriz = calcular_correlacao(retornos)
+                matriz = calcular_correlacao(retornos_alinhados)
 
             pares = listar_pares_correlacao(matriz)
-            precos_filtrados_colunas = list(precos_filtrados.columns)
-            ativos_ignorados = [
-                ticker for ticker in tickers if ticker not in precos_filtrados_colunas
-            ]
+            ativos_removidos = (
+                ativos_sem_preco + ativos_insuficientes + ativos_sem_retorno
+            )
             ativos_sem_sobreposicao = (
                 [
                     ticker
-                    for ticker in precos_filtrados_colunas
+                    for ticker in retornos_alinhados.columns
                     if ticker not in matriz.columns
                 ]
                 if ajuste_por_benchmark
                 else []
+            )
+            inicio_efetivo = retornos_alinhados.index.min()
+            fim_efetivo = retornos_alinhados.index.max()
+            limitadores_janela = identificar_limitadores_janela(
+                retornos,
+                retorno_indice,
+                inicio_efetivo,
             )
 
         st.session_state[RESULTADO_CORRELACAO_KEY] = {
             "matriz": matriz,
             "pares": pares,
             "tickers": tickers,
-            "ativos_ignorados": ativos_ignorados,
+            "ativos_ignorados": ativos_removidos,
             "ativos_sem_sobreposicao": ativos_sem_sobreposicao,
             "ajuste_por_benchmark": ajuste_por_benchmark,
             "benchmark_nome": benchmark_nome,
+            "periodo_solicitado": periodo_nome,
+            "frequencia_nome": frequencia_nome,
+            "inicio_efetivo": inicio_efetivo,
+            "fim_efetivo": fim_efetivo,
+            "observacoes": len(retornos_alinhados),
+            "limitadores_janela": limitadores_janela,
         }
         st.session_state.pop(HEATMAP_DESTACADO_KEY, None)
 
     resultado_correlacao = st.session_state[RESULTADO_CORRELACAO_KEY]
+    campos_resultado = {
+        "matriz",
+        "pares",
+        "tickers",
+        "ativos_ignorados",
+        "ativos_sem_sobreposicao",
+        "ajuste_por_benchmark",
+        "benchmark_nome",
+        "periodo_solicitado",
+        "frequencia_nome",
+        "inicio_efetivo",
+        "fim_efetivo",
+        "observacoes",
+        "limitadores_janela",
+    }
+    if not campos_resultado.issubset(resultado_correlacao):
+        st.session_state.pop(RESULTADO_CORRELACAO_KEY, None)
+        st.info("Clique em Calcular correlação para atualizar a análise.")
+        st.stop()
+
     matriz = resultado_correlacao["matriz"]
     pares = resultado_correlacao["pares"]
     tickers = resultado_correlacao["tickers"]
@@ -558,6 +890,12 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
     ativos_sem_sobreposicao = resultado_correlacao["ativos_sem_sobreposicao"]
     ajuste_por_benchmark_resultado = resultado_correlacao["ajuste_por_benchmark"]
     benchmark_nome_resultado = resultado_correlacao["benchmark_nome"]
+    periodo_solicitado = resultado_correlacao["periodo_solicitado"]
+    frequencia_resultado = resultado_correlacao["frequencia_nome"]
+    inicio_efetivo = resultado_correlacao["inicio_efetivo"]
+    fim_efetivo = resultado_correlacao["fim_efetivo"]
+    observacoes = resultado_correlacao["observacoes"]
+    limitadores_janela = resultado_correlacao["limitadores_janela"]
 
     if matriz.empty or pares.empty:
         st.error(
@@ -566,9 +904,24 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
         )
         st.stop()
 
+    st.caption(
+        "Período solicitado: "
+        f"{periodo_solicitado} | Frequência: {frequencia_resultado} | "
+        "Período efetivamente usado: "
+        f"{formatar_data(inicio_efetivo)} a {formatar_data(fim_efetivo)} | "
+        f"Observações: {observacoes}"
+    )
+
+    if limitadores_janela:
+        st.warning(
+            "A janela comum foi limitada pelo histórico mais curto de: "
+            + formatar_lista_tickers(limitadores_janela)
+            + "."
+        )
+
     if ativos_ignorados:
-        st.caption(
-            "Ativos ignorados por falta de dados suficientes: "
+        st.warning(
+            "Ativos removidos por ticker inválido ou falta de dados suficientes: "
             + ", ".join(ticker_limpo(ticker) for ticker in ativos_ignorados)
         )
 
@@ -645,6 +998,7 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
         tickvals=indices_heatmap,
         ticktext=ativos_heatmap,
         tickangle=-35 if len(ativos_heatmap) > 8 else 0,
+        fixedrange=True,
         showgrid=False,
         showspikes=False,
     )
@@ -653,6 +1007,7 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
         tickvals=indices_heatmap,
         ticktext=ativos_heatmap,
         autorange="reversed",
+        fixedrange=True,
         showgrid=False,
         showspikes=False,
     )

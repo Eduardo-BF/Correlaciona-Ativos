@@ -25,6 +25,10 @@ def carregar_catalogo(caminho: Path = CATALOG_PATH) -> pd.DataFrame:
     catalogo["ticker"] = catalogo["ticker"].str.strip().str.upper()
     catalogo["ticker_yahoo"] = catalogo["ticker_yahoo"].str.strip().str.upper()
     catalogo["nome"] = catalogo["nome"].str.strip()
+    catalogo["ticker_yahoo"] = catalogo["ticker_yahoo"].where(
+        catalogo["ticker_yahoo"].ne(""),
+        catalogo["ticker"].map(normalizar_ticker),
+    )
     catalogo = catalogo[catalogo["ticker_yahoo"].ne("")]
     return catalogo.drop_duplicates(subset=["ticker_yahoo"], keep="first")
 
