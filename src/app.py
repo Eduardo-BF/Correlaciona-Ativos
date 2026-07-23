@@ -687,6 +687,7 @@ RESULTADO_CORRELACAO_KEY = "resultado_correlacao"
 HEATMAP_DESTACADO_KEY = "celula_heatmap_destacada"
 SELECOES_ATIVOS_KEY = "ativos_selecionados"
 ATIVO_ADICIONAR_KEY = "ativo_para_adicionar"
+AUTO_CALCULO_INICIAL_KEY = "auto_calculo_inicial_feito"
 
 
 RESULTADOS_CSS = """
@@ -918,6 +919,14 @@ with st.sidebar:
             index=1,
         )
     calcular = st.button("Calcular correlação", type="primary", use_container_width=True)
+
+auto_calcular_inicial = (
+    not st.session_state.get(AUTO_CALCULO_INICIAL_KEY, False)
+    and RESULTADO_CORRELACAO_KEY not in st.session_state
+)
+if auto_calcular_inicial:
+    st.session_state[AUTO_CALCULO_INICIAL_KEY] = True
+    calcular = True
 
 ajuste_por_benchmark = benchmark_nome != "Nenhum"
 
