@@ -19,12 +19,15 @@ from assets_catalog import (
 from config import (
     DEFAULT_TICKERS,
     FREQUENCY_OPTIONS,
+    HIGH_DECORRELATION_THRESHOLD,
     HIGH_CORRELATION_THRESHOLD,
     LOW_CORRELATION_THRESHOLD,
+    MODERATE_CORRELATION_THRESHOLD,
     MIN_COMMON_OBSERVATIONS,
     MIN_OBSERVATIONS,
     PERIOD_OPTIONS,
     REFERENCE_INDEXES,
+    VERY_HIGH_CORRELATION_THRESHOLD,
 )
 from data_loader import buscar_precos
 from residual_analysis import calcular_correlacao_residual
@@ -36,30 +39,42 @@ def formatar_correlacao(valor: float) -> str:
 
 
 def classificar_correlacao_visual(valor: float) -> str:
+    if valor >= VERY_HIGH_CORRELATION_THRESHOLD:
+        return "Correlação altíssima"
     if valor >= HIGH_CORRELATION_THRESHOLD:
-        return "Alta correlação positiva"
-    if valor < -LOW_CORRELATION_THRESHOLD:
-        return "Correlação negativa"
-    if abs(valor) <= LOW_CORRELATION_THRESHOLD:
+        return "Correlação alta"
+    if valor >= MODERATE_CORRELATION_THRESHOLD:
+        return "Correlação moderada"
+    if valor >= -LOW_CORRELATION_THRESHOLD:
         return "Baixa correlação"
-    return "Correlação moderada"
+    if valor > HIGH_DECORRELATION_THRESHOLD:
+        return "Descorrelação moderada"
+    return "Descorrelação alta"
 
 
 def interpretar_correlacao(valor: float) -> str:
+    if valor >= VERY_HIGH_CORRELATION_THRESHOLD:
+        return "Os ativos apresentaram movimentos históricos muito semelhantes."
     if valor >= HIGH_CORRELATION_THRESHOLD:
         return "Os ativos apresentaram movimentos históricos semelhantes."
-    if abs(valor) <= LOW_CORRELATION_THRESHOLD:
+    if valor >= MODERATE_CORRELATION_THRESHOLD:
+        return "Os ativos apresentaram relação positiva moderada no período."
+    if valor >= -LOW_CORRELATION_THRESHOLD:
         return "Os ativos apresentaram pouca relação linear no período."
-    if valor < -LOW_CORRELATION_THRESHOLD:
-        return "Os ativos apresentaram tendência de movimentos opostos."
-    return "Os ativos apresentaram relação moderada no período analisado."
+    if valor > HIGH_DECORRELATION_THRESHOLD:
+        return "Os ativos apresentaram relação negativa moderada no período."
+    return "Os ativos apresentaram tendência mais forte de movimentos opostos."
 
 
 def estilo_classificacao(classificacao: str) -> dict[str, str]:
     estilos = {
-        "Alta correlação positiva": {
+        "Correlação altíssima": {
             "background": "rgba(239, 106, 106, 0.16)",
             "color": "#B42318",
+        },
+        "Correlação alta": {
+            "background": "rgba(239, 106, 106, 0.12)",
+            "color": "#CF3030",
         },
         "Correlação moderada": {
             "background": "rgba(242, 206, 206, 0.30)",
@@ -69,12 +84,16 @@ def estilo_classificacao(classificacao: str) -> dict[str, str]:
             "background": "rgba(114, 150, 204, 0.18)",
             "color": "#C1CBDB",
         },
-        "Correlação negativa": {
+        "Descorrelação moderada": {
             "background": "rgba(47, 95, 167, 0.20)",
             "color": "#6B9ED1",
         },
+        "Descorrelação alta": {
+            "background": "rgba(47, 95, 167, 0.28)",
+            "color": "#4B86C6",
+        },
     }
-    return estilos.get(classificacao, estilos["Correlação moderada"])
+    return estilos.get(classificacao, estilos["Baixa correlação"])
 
 
 def preparar_pares_exibicao(pares: list[dict]) -> list[dict]:
@@ -1196,10 +1215,10 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
             text=textos_heatmap,
             customdata=dados_hover,
             colorscale=[
-                [0.0, "#2F5FA7"],
-                [0.2, "#7296cc"],
+                [0.0, "#1551AB"],
+                [0.45, "#FFFFFF"],
                 [0.5, "#FFFFFF"],
-                [0.8, "#f2cece"],
+                [0.55, "#FFFFFF"],
                 [1.0, "#EF6A6A"],
             ],
             zmin=-1,
@@ -1265,10 +1284,12 @@ if calcular or RESULTADO_CORRELACAO_KEY in st.session_state:
             "Filtro",
             options=[
                 "Todos",
-                "Alta correlação positiva",
+                "Correlação altíssima",
+                "Correlação alta",
                 "Correlação moderada",
                 "Baixa correlação",
-                "Correlação negativa",
+                "Descorrelação moderada",
+                "Descorrelação alta",
             ],
             horizontal=True,
         )
