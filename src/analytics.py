@@ -1,7 +1,13 @@
 import numpy as np
 import pandas as pd
 
-from config import HIGH_CORRELATION_THRESHOLD, LOW_CORRELATION_THRESHOLD
+from config import (
+    HIGH_DECORRELATION_THRESHOLD,
+    HIGH_CORRELATION_THRESHOLD,
+    LOW_CORRELATION_THRESHOLD,
+    MODERATE_CORRELATION_THRESHOLD,
+    VERY_HIGH_CORRELATION_THRESHOLD,
+)
 
 
 def calcular_retornos(precos: pd.DataFrame, frequencia: str) -> pd.DataFrame:
@@ -31,12 +37,18 @@ def listar_pares_correlacao(matriz: pd.DataFrame) -> pd.DataFrame:
             correlacao = matriz.loc[ativo_1, ativo_2]
             if pd.isna(correlacao):
                 continue
-            if correlacao >= HIGH_CORRELATION_THRESHOLD:
-                classificacao = "Alta correlação"
-            elif correlacao <= LOW_CORRELATION_THRESHOLD:
-                classificacao = "Baixa correlação"
-            else:
+            if correlacao >= VERY_HIGH_CORRELATION_THRESHOLD:
+                classificacao = "Correlação altíssima"
+            elif correlacao >= HIGH_CORRELATION_THRESHOLD:
+                classificacao = "Correlação alta"
+            elif correlacao >= MODERATE_CORRELATION_THRESHOLD:
                 classificacao = "Correlação moderada"
+            elif correlacao >= -LOW_CORRELATION_THRESHOLD:
+                classificacao = "Baixa correlação"
+            elif correlacao > HIGH_DECORRELATION_THRESHOLD:
+                classificacao = "Descorrelação moderada"
+            else:
+                classificacao = "Descorrelação alta"
             pares.append(
                 {
                     "Ativo 1": ativo_1,
